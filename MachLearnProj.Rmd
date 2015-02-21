@@ -1,0 +1,145 @@
+---
+title: "Machine Learning Project."
+author: "Ilya Potapov"
+date: "17 Feb 2015"
+output: html_document
+---
+
+<h3>Preliminary notes</h3>
+
+We are dealing with the classification problem, hence the decision-tree-like approach 
+seems to be more promising for the model choice (not, for example, linear regression type of a 
+model).
+
+<h3>Downloading and cleaning the data</h3>
+
+The data contained entries like "#DIV/0!", which were all treated as NA. In general, all three "NA", "NaN", and "#DIV/0!" were regarded as NA when loaded.
+
+After downloading the data, we perform some basic clean up and exploratory analysis. There are 
+160 variables, including the output variable of the factor class (there are 5 values of it
+corresponding to the way the exercise was performed). Additionally, we note that first 7 
+variables are mere technical details of the experiments, like dates, examinees' names and some 
+other. In this analysis, we omit these 7 variables. The rest variables (from 8th to 159th) are
+the actual records from the devices.
+
+These device measurement variables can be further sorted out. Namely, there are many variables
+that contain NA's in high proportions. That is, I have found variables having NA's do have
+them in more than 90% cases. So, I have removed all such variables from the data set, concluding
+the data set clean up. The final data set contains 53 (52+outcome) variables and the same amount of
+observations the original data did.
+
+<h3>Split the data</h3>
+
+The next step is to split the data. I have prepared the training set to be about 60% of the data
+observations and the rest 40% is for the testing set. According to the help pages of 
+<tt>createDataPartition</tt> the split is done to preserve the proportions of the outcome values,
+i.e. A,B,C,D,and E have same probability in the both sets.
+
+No preporcessing was performed. However, I assume that some related covariates could be combined
+since the experimental set up suggests quite correlated behavior of some variables (maybe, that
+is why the original paper performs analysis only on 17 variables, more than 3 times less 
+complexity of the problem).
+
+<h3>Testing the model performance</h3>
+
+Before we proceed to the model building block, some notes on how the models were tested should
+be made. The <b>testing</b> set
+obtained at the split-the-data stage was used for the predictions by models. The Accuracy and
+Kappa measures of the predictions are reported as the final assessment of the models' performance.
+
+<h3>Building models</h3>
+
+<h4>Single decision tree</h4>
+
+As noted earlier, I have opted for the tree-like solution due to the very nature of the problem,
+i.e. classification. First, I started with the single-tree learning.
+
+The following shows the approximate syntax I have used for the single-tree learning in 
+<tt>R</tt>:
+
+<tt>fit <- train(classe ~ ., method = "rpart", ...)</tt>
+
+For the cross-validation I used bootstrapping (which is the default), namely, the 
+cross-validation takes the whole set and resamples it with repetitions. This is used for
+quality control of the model as the algorithm proceeds.
+
+The call like shown above with the default parameters gives the Accuracy=0.57 and Kappa=0.46. Also,
+it is worthwhile to note that <tt>caret</tt>'s call to <tt>train</tt> is much slower than the
+original call from <tt>rpart</tt>. Additionally, the <tt>rpart</tt> gives slightly more optimistic
+accuracy, namely, Accuracy=0.71 and Kappa=0.64 (perhaps, due to the different cross-validation schemes:
+rpart uses 10-fold CV, while train uses bootstrap).
+
+The single tree pruning process is automatic withing these schemes and is based on the assessment of
+the so called cost-complexity parameter C<sub>p</sub> to determine the optimal tree depth. C<sub>p</sub>
+is the parameter to tune in the single-tree learning.
+
+We can pass the <tt>tuneLength</tt> parameter to <tt>train</tt> to study broader range of possible
+values of C<sub>p</sub> (the default was 3). I have tried more number of values in a study, which is
+summarized below:
+
+<table border="1" style="width: 30%">
+<tr>
+<th><b>Num. C<sub>p</sub> values</b></th>
+<th><b>Accuracy</b></th>
+<th><b>Kappa</b></th>
+</tr>
+<tr style="text-align:center">
+<td>10</td>
+<td>0.68</td>
+<td>0.60</td>
+</tr>
+<tr style="text-align:center">
+<td>30</td>
+<td>0.84</td>
+<td>0.80</td>
+</tr>
+<tr style="text-align:center">
+<td>50</td>
+<td>0.90</td>
+<td>0.87</td>
+</tr>
+<tr style="text-align:center">
+<td>100</td>
+<td>0.92</td>
+<td>0.90</td>
+</tr>
+</table>
+
+The final result on 100 values was further checked on the 10-fold cross-validation with 3 repeats, but
+did not increase the accuracy. Thus, we see the increase in the accuracy of prediction with 
+increasing number of tuning parameter values.
+
+<h4>Random forest model</h4>
+
+The simple random forest simulation with:
+
+<tt> fit <- randomForest(classe ~ ., ...)</tt> (faster)
+
+or
+
+<tt> fit <- train(classe ~ ., method = "rf",...)</tt>
+
+resulted in the Accuracy = 0.995 and Kappa = 0.993. So, the random forest model seems to be the
+best amongst considered here.
+
+<h3>Conclusions</h3>
+
+We conclude that the random forest model in its basic/default set up trained on the 53 variables
+from the original data set is the best model choice predicting the testing data set outcomes
+with the accuracy of more than 99%. However, some simpler single-tree models can perform with
+as much accuracy as 92%.
+
+<h3>Further notes</h3>
+
+Perhaps, the best models observed have quite bad interpretability and one should proceed with a
+trade-off between the complexity and the interpretability of the models. The latter was not 
+reported here, making the study incomplete. There is still room for the interpretation and 
+understanding.
+
+<h3>Availability</h3>
+
+The rough sketch of the commands issued in R to acomplish the task can be found in 
+<a href="http://inuritdino.github.io/MachLearnProj/sketchProjWork.R">file</a>(.R) online.
+
+<hr />
+
